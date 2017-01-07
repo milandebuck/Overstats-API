@@ -12,7 +12,7 @@ var mongoose = require('mongoose');
 var config = ('./config');
 var apiroutes = require('./router/apirouter');
 //set port
-var port = process.env.port || 8080;
+var port = process.env.PORT || 8080;
 mongoose.connect('mongodb://user:Azerty123@ds151228.mlab.com:51228/projecten2');
 //mongoose.connect('mongodb://localhost:27017/Projecten2');
 //set secret

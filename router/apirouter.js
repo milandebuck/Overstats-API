@@ -32,45 +32,57 @@ var createAPI =function(app) {
      */
 //register
     router.post('/Register', function (req, res) {
-        User.findOne({username: req.body.username}, function (err, user) {
-            if (err)throw err;
-            if (!user) {
-                crypt.cryptPassword(req.body.password,function (err,hash) {
-                    if(err) throw err;
-                    var user=User({
-                        username: req.body.username,
-                        password: hash,
-                        editrights: false
-                    }) ;
+        try{
+            User.findOne({username: req.body.username}, function (err, user) {
+                if (err)throw err;
+                if (!user) {
+                    crypt.cryptPassword(req.body.password,function (err,hash) {
+                        if(err) throw err;
+                        var user=User({
+                            username: req.body.username,
+                            password: hash,
+                            editrights: false
+                        }) ;
 
-                    user.save(function (err) {
-                        if(err)throw err;
-                        res.json({succes:true, msg:'user created enjoy the api'});
-                    })
-                });
-            } else res.json({succes: false, msg: 'user already exists'});
+                        user.save(function (err) {
+                            if(err)throw err;
+                            res.json({succes:true, msg:'user created enjoy the api'});
+                        })
+                    });
+                } else res.json({succes: false, msg: 'user already exists'});
 
-        });
+            });
+        }
+        catch(err){
+            res.json({succes: false, msg: 'looks like we have some db problems'});
+        }
+
     });
 //authentication
     router.post('/Authenticate', function (req, res) {
-        User.findOne({username: req.body.username}, function (err, user) {
-            if (err)throw err;
-            if (user) {
-                crypt.comparePassword(req.body.password, user.password, function (err, match) {
-                    if (!match) res.json({succes: false, msg: 'incorrect password'});
-                    else {
-                        var token = jwt.sign(user, app.get('secret'),{ expiresIn: 60*60*24});
-                        res.json({
-                            succes: true,
-                            msg: "Authenticaed enjoy the api",
-                            token: token
-                        });
-                    }
-                })
-            } else res.json({succes: false, msg: 'no user found with that username'});
+        try{
+            User.findOne({username: req.body.username}, function (err, user) {
+                if (err)throw err;
+                if (user) {
+                    crypt.comparePassword(req.body.password, user.password, function (err, match) {
+                        if (!match) res.json({succes: false, msg: 'incorrect password'});
+                        else {
+                            var token = jwt.sign(user, app.get('secret'),{ expiresIn: 60*60*24});
+                            res.json({
+                                succes: true,
+                                msg: "Authenticaed enjoy the api",
+                                token: token
+                            });
+                        }
+                    })
+                } else res.json({succes: false, msg: 'no user found with that username'});
 
-        });
+            });
+        }
+        catch (err){
+            res.json({succes: false, msg: 'oops something wen wrong with our database'});
+        }
+
     });
     /*
      *============================================
@@ -96,35 +108,46 @@ var createAPI =function(app) {
      */
 //get all playername
     router.get('/Players/All', function (req, res) {
-        Player.find({}, function (err, result) {
-         if (err) {
-            res.status(503).send('oops apparantly we have no users :(');
-         }
-         else{
-            console.log(result);
-            var names = [];
-            result.map(function(name) {
-                console.log("adding player" + name.username);
-                var user = {
-                    username: name.username,
-                    avatar: name.avatar,
-                    rating: {
-                        rank:name.competitive.rank,
-                        rank_img:name.competitive.rank_img
-                    },
-                    level: name.level
+        try{
+            Player.find({}, function (err, result) {
+                if (err) {
+                    res.status(503).send('oops apparantly we have no users :(');
                 }
-                names.push(user);
+                else{
+                    console.log(result);
+                    var names = [];
+                    result.map(function(name) {
+                        console.log("adding player" + name.username);
+                        var user = {
+                            username: name.username,
+                            avatar: name.avatar,
+                            rating: {
+                                rank:name.competitive.rank,
+                                rank_img:name.competitive.rank_img
+                            },
+                            level: name.level
+                        }
+                        names.push(user);
+                    });
+                    console.log("sending data");
+                    var data= {
+                        succes: true,
+                        data: names
+                    };
+                    res.json(data);
+                }
+
             });
-             console.log("sending data");
+        }
+        catch (err){
             var data= {
-                succes: true,
-                data: names
+                succes: false,
+                msg: 'oops something wen wrong with our database',
+                data: []
             };
             res.json(data);
-         }
+        }
 
-        });
     });
 
     router.get('/Ladder/Top/:start/:end', function (req, res) {
@@ -166,7 +189,8 @@ var createAPI =function(app) {
         }
         catch (err){
             var data= {
-                succes: true,
+                succes: false,
+                msg: 'oops something wen wrong with our database',
                 data: []
             };
             res.json()
@@ -175,105 +199,159 @@ var createAPI =function(app) {
     });
 
     router.get('/Players/:query',function (req,res) {
-        var query=req.params.query;
-        var q =Player.find({username: new RegExp(query, "i")}).sort({username: 1}).limit(10);
+        try{
+            var query=req.params.query;
+            var q =Player.find({username: new RegExp(query, "i")}).sort({username: 1}).limit(10);
 
-        q.exec(function (err,result) {
-            if (err) {
-                res.status(503).send({succes: false, msg:"no user found matching this name"});
-            }
-            else{
-                console.log(result);
-                var names = [];
-                result.map(function (name) {
-                    var user = {
-                        username: name.username,
-                        avatar: name.avatar
+            q.exec(function (err,result) {
+                if (err) {
+                    res.status(503).send({succes: false, msg:"no user found matching this name"});
+                }
+                else{
+                    console.log(result);
+                    var names = [];
+                    result.map(function (name) {
+                        var user = {
+                            username: name.username,
+                            avatar: name.avatar
+                        };
+                        names.push(user);
+                    });
+                    var data= {
+                        succes: true,
+                        data: names
                     };
-                    names.push(user);
-                });
-                var data= {
-                    succes: true,
-                    data: names
-                };
-                res.json(data);
-            }
-        });
+                    res.json(data);
+                }
+            });
+        }
+        catch (err){
+            var data= {
+                succes: false,
+                msg: 'oops something wen wrong with our database',
+                data: []
+            };
+            res.json(data);
+        }
+
     });
 
 //find a player
     router.get('/Players/User/:username', function (req, res) {
-        Player.find({username: req.params.username}, function (err, result) {
-            if (err) {
-                res.status(503).send({succes: false, msg:"no user found matching this name"});
-            }
-            var stats=JSON.parse(result[0].stats);
-            var name=result[0];
-            var user = {
-                username: name.username,
-                avatar: name.avatar,
-                rating: {
-                    rank:name.competitive.rank,
-                    rank_img:name.competitive.rank_img
-                },
-                level: name.level,
-                stats:stats,
-                heroes:name.heroes
-            };
+        try{
+            Player.find({username: req.params.username}, function (err, result) {
+                if (err) {
+                    res.status(503).send({succes: false, msg:"no user found matching this name"});
+                }
+                var stats=JSON.parse(result[0].stats);
+                var name=result[0];
+                var user = {
+                    username: name.username,
+                    avatar: name.avatar,
+                    rating: {
+                        rank:name.competitive.rank,
+                        rank_img:name.competitive.rank_img
+                    },
+                    level: name.level,
+                    stats:stats,
+                    heroes:name.heroes
+                };
+                var data= {
+                    succes: true,
+                    data: user
+                };
+                res.json(data);
+            });
+        }
+        catch (err){
             var data= {
-                succes: true,
-                data: user
+                succes: false,
+                msg: 'oops something wen wrong with our database',
+                data: {}
             };
             res.json(data);
-        });
+        }
+
     });
 
     router.get('/Players/User/:username/Stats', function (req, res) {
-        Player.find({username: req.params.username}, function (err, result) {
-            if (err) {
-                res.status(503).send({succes: false, msg:"no user found matching this name"});
-            }
-            console.log("result" + result[0].stats);
+        try{
+            Player.find({username: req.params.username}, function (err, result) {
+                if (err) {
+                    res.status(503).send({succes: false, msg:"no user found matching this name"});
+                }
+                console.log("result" + result[0].stats);
+                var data= {
+                    succes: true,
+                    data: JSON.parse(result[0].stats)
+                };
+                res.json(data);
+            });
+        }
+        catch (err){
             var data= {
-                succes: true,
-                data: JSON.parse(result[0].stats)
+                succes: false,
+                msg: 'oops something wen wrong with our database',
+                data: {}
             };
             res.json(data);
-        });
+        }
+
     });
 
     router.get('/Players/User/:username/Heroes', function (req, res) {
-        Player.find({username: req.params.username}, function (err, result) {
-            if (err) {
-                res.status(503).send({succes: false, msg:"no user found matching this name"});
-            }
+        try{
+            Player.find({username: req.params.username}, function (err, result) {
+                if (err) {
+                    res.status(503).send({succes: false, msg:"no user found matching this name"});
+                }
+                var data= {
+                    succes: true,
+                    data: result[0].heroes
+                };
+                res.json(data);
+            });
+        }
+        catch (err){
             var data= {
-                succes: true,
-                data: result[0].heroes
+                succes: false,
+                msg: 'oops something wen wrong with our database',
+                data: {}
             };
             res.json(data);
-        });
+        }
+
     });
 
     router.get('/Ladder/Distribution',function(req,res){
-
-        Player.find({},function (err,result) {
-            var distribution = [];
-            var i = 0;
-            while(i < 100){
-                i++;
-                distribution.push(0);
-            }
-            result.map(function(player) {
-                var index=Math.round(player.competitive.rank/50);
-                if(index > 1)distribution[index]++;
-            });
-            var data = {
-                succes:true,
-                data:distribution
+        try{
+            Player.find({},function (err,result) {
+                var distribution = [];
+                var i = 0;
+                while(i < 100){
+                    i++;
+                    distribution.push(0);
+                }
+                result.map(function(player) {
+                    var index=Math.round(player.competitive.rank/50);
+                    if(index > 1)distribution[index]++;
+                });
+                var data = {
+                    succes:true,
+                    data:distribution
+                };
+                res.json(data);
+            })
+        }
+        catch (err){
+            var data= {
+                succes: false,
+                msg: 'oops something wen wrong with our database',
+                data: []
             };
             res.json(data);
-        })
+        }
+
     })
 
 

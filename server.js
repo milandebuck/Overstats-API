@@ -36,6 +36,10 @@ app.use(function(req, res, next) {
 app.use(morgan('dev'));
 app.use('/api',apiroutes(app));
 
+app.use(function (err, req, res, next) {
+    res.status(500).send('Oops something went wrong');
+})
+
 app.listen(port);
 console.log('backend API listening at http://localhost:' + port);
 

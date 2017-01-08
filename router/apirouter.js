@@ -58,9 +58,9 @@ var createAPI =function(app) {
             if (err)throw err;
             if (user) {
                 crypt.comparePassword(req.body.password, user.password, function (err, match) {
-                    if (!match) res.json({succes: false, msg: 'incorrect password'})
+                    if (!match) res.json({succes: false, msg: 'incorrect password'});
                     else {
-                        var token = jwt.sign(user, app.get('secret'));
+                        var token = jwt.sign(user, app.get('secret'),{ expiresIn: 60*60*24});
                         res.json({
                             succes: true,
                             msg: "Authenticaed enjoy the api",
@@ -96,7 +96,6 @@ var createAPI =function(app) {
      */
 //get all playername
     router.get('/Players/All', function (req, res) {
-        console.log('test');
         Player.find({}, function (err, result) {
          if (err) {
             res.status(503).send('oops apparantly we have no users :(');
@@ -142,8 +141,6 @@ var createAPI =function(app) {
             if(end > length)end = length;
             var names = [];
             getPlayersByRanking(result,req.params.start,req.params.end).forEach(function (name) {
-                console.log("adding player" + name.username);
-                //var stats=JSON.parse(name.stats);
                 var user = {
                     username: name.username,
                     avatar: name.avatar,
@@ -169,7 +166,6 @@ var createAPI =function(app) {
 
     router.get('/Players/:query',function (req,res) {
         var query=req.params.query;
-        console.log(query);
         var q =Player.find({username: new RegExp(query, "i")}).sort({username: 1}).limit(10);
 
         q.exec(function (err,result) {
@@ -180,7 +176,6 @@ var createAPI =function(app) {
                 console.log(result);
                 var names = [];
                 result.map(function (name) {
-                    console.log("adding player" + name.username);
                     var user = {
                         username: name.username,
                         avatar: name.avatar
@@ -191,7 +186,6 @@ var createAPI =function(app) {
                     succes: true,
                     data: names
                 };
-                console.log("sending data");
                 res.json(data);
             }
         });
@@ -257,17 +251,17 @@ var createAPI =function(app) {
             var distribution = [];
             var i = 0;
             while(i < 100){
-                i++
+                i++;
                 distribution.push(0);
             }
             result.map(function(player) {
-                var index=Math.round(player.competitive.rank/50)
+                var index=Math.round(player.competitive.rank/50);
                 if(index > 1)distribution[index]++;
             });
             var data = {
                 succes:true,
                 data:distribution
-            }
+            };
             res.json(data);
         })
     })

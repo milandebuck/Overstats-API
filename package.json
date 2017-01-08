@@ -2,7 +2,8 @@
   "name": "project2API",
   "main": "server.js",
   "scripts": {
-    "start": "nodemon server.js"
+    "dev":"nodemon server.js",
+    "start": "node server.js"
   },
   "dependencies": {
     "async": "^2.1.2",

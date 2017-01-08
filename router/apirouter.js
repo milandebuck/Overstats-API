@@ -128,40 +128,50 @@ var createAPI =function(app) {
     });
 
     router.get('/Ladder/Top/:start/:end', function (req, res) {
-        var start=req.params.start;
-        var end= req.params.end;
-        Player.find({},function (err, result) {
-            if (err) {
-                res.status(503).send({succes: false, msg:"no user found matching this name"});
-            }
-            var length=result.length;
-            if(start > length){
-                res.status(503).send({succes: false, msg:"You are at the end of our playerbase"});
-            }
-            if(end > length)end = length;
-            var names = [];
-            getPlayersByRanking(result,req.params.start,req.params.end).forEach(function (name) {
-                var user = {
-                    username: name.username,
-                    avatar: name.avatar,
-                    rating: {
-                        rank:name.competitive.rank,
-                        rank_img:name.competitive.rank_img
-                    },
-                    level: name.level,
-                    /*stats:{
-                        TimePlayed:stats.TimePlayed,
-                        TimeOnFire:stats.TimeSpentonFire,
-                    }*/
+        try {
+            var start=req.params.start;
+            var end= req.params.end;
+            Player.find({},function (err, result) {
+                if (err) {
+                    res.status(503).send({succes: false, msg:"no user found matching this name"});
+                }
+                var length=result.length;
+                if(start > length){
+                    res.status(503).send({succes: false, msg:"You are at the end of our playerbase"});
+                }
+                if(end > length)end = length;
+                var names = [];
+                getPlayersByRanking(result,req.params.start,req.params.end).forEach(function (name) {
+                    var user = {
+                        username: name.username,
+                        avatar: name.avatar,
+                        rating: {
+                            rank:name.competitive.rank,
+                            rank_img:name.competitive.rank_img
+                        },
+                        level: name.level,
+                        /*stats:{
+                         TimePlayed:stats.TimePlayed,
+                         TimeOnFire:stats.TimeSpentonFire,
+                         }*/
+                    };
+                    names.push(user);
+                });
+                var data= {
+                    succes: true,
+                    data: names
                 };
-                names.push(user);
+                res.json(data);
             });
+        }
+        catch (err){
             var data= {
                 succes: true,
-                data: names
+                data: []
             };
-            res.json(data);
-        });
+            res.json()
+        }
+
     });
 
     router.get('/Players/:query',function (req,res) {

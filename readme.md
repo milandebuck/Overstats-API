@@ -2,9 +2,8 @@
 ### Description
 Overstats API
 
-### how to use
+### Installation
  
-#### Angular frontend
 
 make sure you have ` npm ` installed
 
@@ -21,10 +20,19 @@ $ npm install
 Then start it
 
 ```sh 
-$ npm start
+$ npm run dev
 ```
 
 Api can be found on localhost:8080
+
+Production version
+
+```sh 
+$ npm start
+```
+
+###Live version
+The [live version](https://api-overstats.herokuapp.com/Api "Overstats Api") can be found on heroku
 
 ### Collaborators
 - Milan De Buck
